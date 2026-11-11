@@ -11,12 +11,50 @@ STUDENT must be a separate, student-ready handout aligned to the same standard. 
 Make both formats specific to the standard, grade/course, subject, focus, duration, context, and selected supports. Use accessible, polished language. Do not fabricate source texts or data; provide original examples or clearly label teacher-provided materials. Teacher verifies all content before instruction.`;
 function cors(origin, allowed) {
  const ok=!allowed||allowed==="*"||origin===allowed;
- return {"Access-Control-Allow-Origin":ok?(allowed==="*"?"*":(origin||allowed||"*")):"null","Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type","Vary":"Origin"};
+ return {"Access-Control-Allow-Origin":ok?(allowed==="*"?"*":(origin||allowed||"*")):"null","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Admin-Token","Vary":"Origin"};
 }
 export default { async fetch(request,env) {
  const origin=request.headers.get("Origin")||"",allowed=env.ALLOWED_ORIGIN||"",headers=cors(origin,allowed);
  if(request.method==="OPTIONS")return new Response(null,{status:204,headers});
  if(allowed&&origin!==allowed)return Response.json({error:"Origin not allowed."},{status:403,headers});
+
+ const url=new URL(request.url);
+ // Persistent standards library: Cloudflare D1 binding is named DB.
+ if(url.pathname==="/api/standards" && request.method==="GET"){
+  if(!env.DB)return Response.json({error:"Standards database is not connected yet. Bind a Cloudflare D1 database as DB."},{status:503,headers});
+  const q=(url.searchParams.get("q")||"").trim().slice(0,160);
+  const grade=Number(url.searchParams.get("grade")||0),subject=(url.searchParams.get("subject")||"").trim().slice(0,40);
+  const framework=(url.searchParams.get("framework")||"").trim().slice(0,60);
+  const limit=Math.min(100,Math.max(1,Number(url.searchParams.get("limit")||50)));
+  let sql="SELECT id,framework,jurisdiction,subject,grade,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated FROM standards WHERE 1=1";
+  const args=[];
+  if(grade){sql+=" AND grade=?";args.push(grade);}
+  if(subject){sql+=" AND subject=?";args.push(subject);}
+  if(framework){sql+=" AND framework=?";args.push(framework);}
+  if(q){sql+=" AND (code LIKE ? OR title LIKE ? OR wording LIKE ? OR summary LIKE ? OR keywords LIKE ? OR strand LIKE ?)";for(let i=0;i<6;i++)args.push("%"+q+"%");}
+  sql+=" ORDER BY grade, strand, code LIMIT ?";
+  args.push(limit);
+  try{const result=await env.DB.prepare(sql).bind(...args).all();return Response.json({count:result.results.length,standards:result.results},{headers});}
+  catch{return Response.json({error:"Could not read the standards library. Check that schema.sql has been applied to D1."},{status:500,headers});}
+ }
+ if(url.pathname==="/api/standards" && request.method==="POST"){
+  if(!env.DB)return Response.json({error:"Standards database is not connected."},{status:503,headers});
+  if(!env.DB_ADMIN_TOKEN||request.headers.get("X-Admin-Token")!==env.DB_ADMIN_TOKEN)return Response.json({error:"Admin authorization required."},{status:401,headers});
+  let body;try{body=await request.json();}catch{return Response.json({error:"Send valid JSON."},{status:400,headers});}
+  const items=Array.isArray(body.standards)?body.standards:[body];
+  if(!items.length||items.length>500)return Response.json({error:"Import between 1 and 500 standards at a time."},{status:400,headers});
+  const stmt=env.DB.prepare("INSERT INTO standards (id,framework,jurisdiction,subject,grade,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(framework,jurisdiction,code) DO UPDATE SET strand=excluded.strand,title=excluded.title,wording=excluded.wording,summary=excluded.summary,keywords=excluded.keywords,official_url=excluded.official_url,source_name=excluded.source_name,source_checked_at=excluded.source_checked_at,updated_at=CURRENT_TIMESTAMP");
+  const batch=[];
+  for(const s of items){
+   const grade=Number(s.grade),code=String(s.code||"").trim().toUpperCase(),framework=String(s.framework||"CCSS").trim(),jurisdiction=String(s.jurisdiction||"National").trim(),subject=String(s.subject||"ELA").trim();
+   const urlValue=String(s.official_url||"").trim();
+   if(!code||!Number.isInteger(grade)||grade<0||grade>12||!s.strand||!s.title||!s.wording||!/^https:\/\//i.test(urlValue))return Response.json({error:"Each record needs grade (0–12), code, strand, title, exact wording, and an HTTPS official source URL."},{status:400,headers});
+   const id=String(s.id||[framework,jurisdiction,code].join("-").toLowerCase().replace(/[^a-z0-9-]/g,"-")).slice(0,120);
+   batch.push(stmt.bind(id,framework,jurisdiction,subject,grade,String(s.strand).slice(0,160),code,String(s.title).slice(0,240),String(s.wording).slice(0,8000),String(s.summary||"").slice(0,1200),String(s.keywords||"").slice(0,1000),urlValue,String(s.source_name||"Teacher-supplied source").slice(0,240),String(s.source_checked_at||new Date().toISOString().slice(0,10)).slice(0,20),s.curated?1:0));
+  }
+  try{const result=await env.DB.batch(batch);return Response.json({saved:items.length,results:result.length},{status:201,headers});}
+  catch{return Response.json({error:"Import failed. Check for duplicate identifiers or invalid field values."},{status:500,headers});}
+ }
  if(request.method!=="POST")return Response.json({error:"Use POST to generate a lesson."},{status:405,headers});
  if(!env.OPENAI_API_KEY)return Response.json({error:"Generator setup is incomplete. The API key is not configured."},{status:503,headers});
  let body;try{body=await request.json();}catch{return Response.json({error:"Please submit valid form details."},{status:400,headers});}
