@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS standards (
   jurisdiction TEXT NOT NULL DEFAULT 'National',
   subject TEXT NOT NULL DEFAULT 'ELA',
   grade INTEGER NOT NULL CHECK (grade BETWEEN 0 AND 12),
+  grade_band TEXT NOT NULL DEFAULT '',
   strand TEXT NOT NULL,
   code TEXT NOT NULL,
   title TEXT NOT NULL,
