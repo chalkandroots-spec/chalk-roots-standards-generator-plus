@@ -26,9 +26,9 @@ export default { async fetch(request,env) {
   const grade=Number(url.searchParams.get("grade")||0),subject=(url.searchParams.get("subject")||"").trim().slice(0,40);
   const framework=(url.searchParams.get("framework")||"").trim().slice(0,60);
   const limit=Math.min(100,Math.max(1,Number(url.searchParams.get("limit")||50)));
-  let sql="SELECT id,framework,jurisdiction,subject,grade,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated FROM standards WHERE 1=1";
+  let sql="SELECT id,framework,jurisdiction,subject,grade,grade_band,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated FROM standards WHERE 1=1";
   const args=[];
-  if(grade){sql+=" AND grade=?";args.push(grade);}
+  if(grade){if(grade>=6&&grade<=8){sql+=" AND (grade=? OR grade_band=?)";args.push(grade,"6-8");}else{sql+=" AND grade=?";args.push(grade);}}
   if(subject){sql+=" AND subject=?";args.push(subject);}
   if(framework){sql+=" AND framework=?";args.push(framework);}
   if(q){sql+=" AND (code LIKE ? OR title LIKE ? OR wording LIKE ? OR summary LIKE ? OR keywords LIKE ? OR strand LIKE ?)";for(let i=0;i<6;i++)args.push("%"+q+"%");}
@@ -43,14 +43,14 @@ export default { async fetch(request,env) {
   let body;try{body=await request.json();}catch{return Response.json({error:"Send valid JSON."},{status:400,headers});}
   const items=Array.isArray(body.standards)?body.standards:[body];
   if(!items.length||items.length>500)return Response.json({error:"Import between 1 and 500 standards at a time."},{status:400,headers});
-  const stmt=env.DB.prepare("INSERT INTO standards (id,framework,jurisdiction,subject,grade,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(framework,jurisdiction,code) DO UPDATE SET strand=excluded.strand,title=excluded.title,wording=excluded.wording,summary=excluded.summary,keywords=excluded.keywords,official_url=excluded.official_url,source_name=excluded.source_name,source_checked_at=excluded.source_checked_at,updated_at=CURRENT_TIMESTAMP");
+  const stmt=env.DB.prepare("INSERT INTO standards (id,framework,jurisdiction,subject,grade,grade_band,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(framework,jurisdiction,code) DO UPDATE SET grade_band=excluded.grade_band,strand=excluded.strand,title=excluded.title,wording=excluded.wording,summary=excluded.summary,keywords=excluded.keywords,official_url=excluded.official_url,source_name=excluded.source_name,source_checked_at=excluded.source_checked_at,updated_at=CURRENT_TIMESTAMP");
   const batch=[];
   for(const s of items){
    const grade=Number(s.grade),code=String(s.code||"").trim().toUpperCase(),framework=String(s.framework||"CCSS").trim(),jurisdiction=String(s.jurisdiction||"National").trim(),subject=String(s.subject||"ELA").trim();
    const urlValue=String(s.official_url||"").trim();
    if(!code||!Number.isInteger(grade)||grade<0||grade>12||!s.strand||!s.title||!s.wording||!/^https:\/\//i.test(urlValue))return Response.json({error:"Each record needs grade (0–12), code, strand, title, exact wording, and an HTTPS official source URL."},{status:400,headers});
    const id=String(s.id||[framework,jurisdiction,code].join("-").toLowerCase().replace(/[^a-z0-9-]/g,"-")).slice(0,120);
-   batch.push(stmt.bind(id,framework,jurisdiction,subject,grade,String(s.strand).slice(0,160),code,String(s.title).slice(0,240),String(s.wording).slice(0,8000),String(s.summary||"").slice(0,1200),String(s.keywords||"").slice(0,1000),urlValue,String(s.source_name||"Teacher-supplied source").slice(0,240),String(s.source_checked_at||new Date().toISOString().slice(0,10)).slice(0,20),s.curated?1:0));
+   batch.push(stmt.bind(id,framework,jurisdiction,subject,grade,String(s.grade_band||"").slice(0,20),String(s.strand).slice(0,160),code,String(s.title).slice(0,240),String(s.wording).slice(0,8000),String(s.summary||"").slice(0,1200),String(s.keywords||"").slice(0,1000),urlValue,String(s.source_name||"Teacher-supplied source").slice(0,240),String(s.source_checked_at||new Date().toISOString().slice(0,10)).slice(0,20),s.curated?1:0));
   }
   try{const result=await env.DB.batch(batch);return Response.json({saved:items.length,results:result.length},{status:201,headers});}
   catch{return Response.json({error:"Import failed. Check for duplicate identifiers or invalid field values."},{status:500,headers});}
