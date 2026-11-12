@@ -60,20 +60,20 @@ footer{text-align:center;padding:28px;color:#777967;font:12px Arial,sans-serif}
 <div class="checkrow"><input id="extend" type="checkbox"><label for="extend" style="margin:0">Include enrichment / extension</label></div>
 <button class="primary" id="generate" type="submit">Generate my Chalk & Roots lesson →</button>
 <div class="status" id="status" role="status">Ready when you are.</div>
-<div class="note">Use the exact wording of your local or adopted standard. AI drafts; you verify alignment, examples, and answer guidance before teaching.</div>
+<div class="note">Use the exact wording of your local or adopted standard. After generating, use the results panel to download both formats in one PowerPoint (.pptx). AI drafts; you verify alignment, examples, and answer guidance before teaching.</div>
 </form></section>
 <section class="card">
 <div class="output-head"><div><div class="eyebrow">YOUR CLASSROOM-READY DRAFT</div><h2 id="outTitle">Your lesson is taking shape</h2><p class="sub" id="outSub">A practical plan. Ready to adapt.</p></div><span class="pill">CHALK & ROOTS</span></div>
 <div id="empty" class="empty"><div class="sprout">✿</div><h3>A small starting point.<br>A whole lesson ahead.</h3><p>Enter a standard and choose Generate.<br>We’ll bring the structure. You bring the teaching.</p></div>
 <div id="output" hidden>
-<div class="toolbar"><button class="secondary" id="downloadWord">Download Word-compatible .doc</button><button class="secondary" id="downloadPptx">Download PowerPoint</button><button class="secondary" id="print">Print / Save as PDF</button><button class="secondary" id="copy">Copy text</button></div>
+<div class="toolbar"><button class="secondary" id="downloadWord">Download Word-compatible .doc</button><button class="secondary" id="downloadPptx" type="button">Download both formats as PowerPoint (.pptx)</button><button class="secondary" id="print">Print / Save as PDF</button><button class="secondary" id="copy">Copy text</button></div>
 <div class="tabs"><button class="active" data-tab="teacher">Teacher plan</button><button data-tab="student">Student handout</button></div>
 <div class="result" id="result"></div>
-<div class="note">Two classroom formats: an editable teacher plan and a student-facing handout. Use Print / Save as PDF for a PDF copy of the selected format.</div>
+<div class="note">Your PowerPoint download includes both classroom formats: the editable Teacher Plan and the Student Handout. You can also print or save the selected format as a PDF.</div>
 </div>
 </section></div></main>
 <footer>Chalk & Roots · Explore. Question. Learn. · chalkandroots.com</footer>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script>
 const API_URL='https://chalk-roots-standards-generator-plus.chalkandroots.workers.dev/';
 async function searchLibrary(){
@@ -139,7 +139,7 @@ $('downloadPptx').addEventListener('click',async()=>{
    }
   }
   await pptx.writeFile({fileName:'Chalk_Roots_Lesson.pptx'});
-  $('status').textContent='PowerPoint file created.';
+  $('status').textContent='PowerPoint file created: Teacher Plan and Student Handout.';
  }catch(err){$('status').textContent=err.message||'PowerPoint export failed.';}
 });
 </script></body></html>
