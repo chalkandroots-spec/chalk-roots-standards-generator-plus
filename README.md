@@ -18,9 +18,11 @@ Branded K–12 standards-to-lesson builder. The front end preserves the campaign
 Never put API keys in browser code or the repository. Keep this repository private.
 
 ## Exports
-- Word-compatible `.doc` export includes both teacher and student formats.
-- Print / Save as PDF prints the selected format.
-- PowerPoint `.pptx` export uses PptxGenJS from jsDelivr and requires an internet connection.
+- PDF `.pdf` download includes both classroom formats: the Teacher Plan and Student Handout, with page numbering.
+- PowerPoint `.pptx` download includes both classroom formats and automatically paginates longer lessons.
+- Word-compatible `.doc` export includes both classroom formats.
+- Print selected format remains available as a separate browser print option.
+- PDF and PowerPoint generation use browser libraries loaded from public CDNs, so an internet connection is required for those export buttons.
 
 ## Scope and safeguards
 Teachers must paste or verify exact standard wording. The AI does not certify alignment or replace an authoritative searchable standards database. The generator creates instructional drafts; teachers must verify standards, answer keys, grade-level fit, facts, accessibility, and local requirements. Add Cloudflare rate limiting / Turnstile, cost alerts, and usage controls before broad public release.
