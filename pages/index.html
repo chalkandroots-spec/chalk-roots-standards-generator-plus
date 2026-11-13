@@ -94,17 +94,17 @@ $('libraryQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDe
 
 let generated=null,activeTab='teacher';
 function safe(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function render(){if(!generated)return;const d=generated[activeTab];$('result').innerHTML='<h3>'+safe(activeTab==='teacher'?'Teacher lesson plan':'Student handout')+'</h3>'+safe(d).replace(/\n/g,'<br>');}
+function render(){if(!generated)return;const labels={teacher:'Lesson Plan',practice:'Student Practice',key:'Teacher Key'};const d=generated[activeTab];$('result').innerHTML='<h3>'+labels[activeTab]+'</h3>'+safe(d).replace(/\n/g,'<br>');}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));render();}));
 $('generator').addEventListener('submit',async e=>{
-e.preventDefault();const payload={grade:$('grade').value,subject:$('subject').value.trim(),framework:$('framework').value.trim(),code:$('code').value.trim(),standard:$('standard').value.trim(),duration:$('duration').value,scope:$('sequence').value,focus:$('focus').value.trim(),materials:$('materials').value.trim(),supports:{eld:$('eld').checked,scaffold:$('scaffold').checked,extend:$('extend').checked}};
+e.preventDefault();const payload={grade:$('grade').value,subject:$('subject').value.trim(),framework:$('framework').value.trim(),code:$('code').value.trim(),standard:$('standard').value.trim(),duration:'45 minutes',scope:'One lesson',focus:'Teach the selected standard clearly and directly',supports:{eld:false,scaffold:true,extend:false}};
 if(!payload.subject||!payload.standard){$('status').textContent='Please enter the subject and exact standard wording.';return;}
-$('generate').disabled=true;$('generate').textContent='Building your lesson…';$('status').textContent='Creating both classroom formats…';
-try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const responseText=await r.text();let data;try{data=JSON.parse(responseText);}catch{throw new Error('The generator returned an empty or unreadable response (HTTP '+r.status+'). Refresh the page and try once more.');}if(!r.ok)throw new Error(data.error||('The generator could not complete this request (HTTP '+r.status+').'));generated=data;activeTab='teacher';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='teacher'));$('empty').hidden=true;$('output').hidden=false;$('outTitle').textContent=data.title||'Your lesson is ready';$('outSub').textContent=payload.grade+' · '+payload.subject+' · '+payload.scope;render();$('status').textContent='Your lesson is ready. Review and adapt before teaching.';}catch(err){$('status').textContent=err.message+' Check that the Cloudflare Worker is connected and configured.';}finally{$('generate').disabled=false;$('generate').textContent='Generate my Chalk & Roots lesson →';}
+$('generate').disabled=true;$('generate').textContent='Generating your files…';$('status').textContent='Creating your three classroom sections…';
+try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const responseText=await r.text();let data;try{data=JSON.parse(responseText);}catch{throw new Error('The generator returned an empty or unreadable response (HTTP '+r.status+'). Refresh the page and try once more.');}if(!r.ok)throw new Error(data.error||('The generator could not complete this request (HTTP '+r.status+').'));generated=data;activeTab='teacher';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='teacher'));$('empty').hidden=true;$('output').hidden=false;$('outTitle').textContent=data.title||'Your lesson is ready';$('outSub').textContent=payload.grade+' · '+payload.subject+' · '+(payload.code||'Custom standard');render();$('status').textContent='Your lesson is ready. Review and adapt before teaching.';}catch(err){$('status').textContent=err.message+' Check that the Cloudflare Worker is connected and configured.';}finally{$('generate').disabled=false;$('generate').textContent='Generate my PDF + editable PowerPoint →';}
 });
-function docHtml(){return `<!doctype html><html><head><meta charset="utf-8"><title>${safe(generated.title)}</title><style>body{font:11pt Calibri,Arial;color:#333;line-height:1.5}h1,h2{color:#294d3d}h1{font: bold 22pt Georgia} .brand{color:#294d3d;font-weight:bold;letter-spacing:2px}</style></head><body><p class="brand">CHALK & ROOTS</p><h1>${safe(generated.title)}</h1><h2>Teacher lesson plan</h2><p>${safe(generated.teacher).replace(/\n/g,'<br>')}</p><h2>Student handout</h2><p>${safe(generated.student).replace(/\n/g,'<br>')}</p><p>chalkandroots.com</p></body></html>`;}
+function docHtml(){return `<!doctype html><html><head><meta charset="utf-8"><title>${safe(generated.title)}</title><style>body{font:11pt Calibri,Arial;color:#333;line-height:1.5}h1,h2{color:#294d3d}h1{font: bold 22pt Georgia} .brand{color:#294d3d;font-weight:bold;letter-spacing:2px}</style></head><body><p class="brand">CHALK & ROOTS</p><h1>${safe(generated.title)}</h1><h2>Lesson Plan</h2><p>${safe(generated.teacher).replace(/\n/g,'<br>')}</p><h2>Student Practice</h2><p>${safe(generated.practice).replace(/\n/g,'<br>')}</p><h2>Teacher Key</h2><p>${safe(generated.key).replace(/\n/g,'<br>')}</p><p>chalkandroots.com</p></body></html>`;}
 $('downloadWord').addEventListener('click',()=>{const blob=new Blob([docHtml()],{type:'application/msword'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Chalk_Roots_Lesson.doc';a.click();URL.revokeObjectURL(url);});
-$('print').addEventListener('click',()=>{const w=window.open('','_blank');if(!w){$('status').textContent='Allow pop-ups to print or save as PDF.';return;}w.document.write(`<!doctype html><html><head><title>${safe(generated.title)}</title><style>body{font:12pt Arial;line-height:1.5;color:#333;margin:36px}h1,h2{color:#294d3d}h1{font: bold 22pt Georgia} .brand{font-weight:bold;letter-spacing:2px;color:#294d3d}@media print{body{margin:18mm}}</style></head><body><p class="brand">CHALK & ROOTS</p><h1>${safe(generated.title)}</h1><h2>${activeTab==='teacher'?'Teacher lesson plan':'Student handout'}</h2><p>${safe(generated[activeTab]).replace(/\n/g,'<br>')}</p><p>chalkandroots.com</p></body></html>`);w.document.close();w.focus();w.print();});
+$('print').addEventListener('click',()=>{const w=window.open('','_blank');if(!w){$('status').textContent='Allow pop-ups to print or save as PDF.';return;}w.document.write(`<!doctype html><html><head><title>${safe(generated.title)}</title><style>body{font:12pt Arial;line-height:1.5;color:#333;margin:36px}h1,h2{color:#294d3d}h1{font: bold 22pt Georgia} .brand{font-weight:bold;letter-spacing:2px;color:#294d3d}@media print{body{margin:18mm}}</style></head><body><p class="brand">CHALK & ROOTS</p><h1>${safe(generated.title)}</h1><h2>${({teacher:'Lesson Plan',practice:'Student Practice',key:'Teacher Key'})[activeTab]}</h2><p>${safe(generated[activeTab]).replace(/\n/g,'<br>')}</p><p>chalkandroots.com</p></body></html>`);w.document.close();w.focus();w.print();});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(generated[activeTab]);$('status').textContent='Selected format copied.';}catch{$('status').textContent='Copy unavailable in this browser.';}});
 
 $('downloadPdf').addEventListener('click',()=>{
@@ -168,9 +168,10 @@ $('downloadPdf').addEventListener('click',()=>{
   const titleLines=pdf.splitTextToSize(cleanText(generated.title||'Classroom-Ready Lesson'),contentW);
   for(const line of titleLines){pdf.text(line,margin,y);y+=27;}
   pdf.setFont('helvetica','normal');pdf.setFontSize(9.5);pdf.setTextColor(113,103,95);
-  pdf.text('Teacher Plan and Student Handout',margin,y+2);y+=27;
-  writeSection('Teacher Plan',generated.teacher);
-  writeSection('Student Handout',generated.student);
+  pdf.text('Lesson Plan · Student Practice · Teacher Key',margin,y+2);y+=27;
+  writeSection('Lesson Plan',generated.teacher);
+  writeSection('Student Practice',generated.practice);
+  writeSection('Teacher Key',generated.key);
   const total=pdf.internal.getNumberOfPages();
   for(let page=1;page<=total;page++){
    pdf.setPage(page);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(113,103,95);
@@ -178,7 +179,7 @@ $('downloadPdf').addEventListener('click',()=>{
    pdf.text('Page '+page+' of '+total,pageW-margin,pageH-25,{align:'right'});
   }
   pdf.save('Chalk_Roots_Lesson.pdf');
-  $('status').textContent='PDF downloaded with both the Teacher Plan and Student Handout.';
+  $('status').textContent='PDF downloaded with Lesson Plan, Student Practice, and Teacher Key.';
  }catch(err){$('status').textContent=err.message||'PDF export failed.';}
 });
 
@@ -220,7 +221,7 @@ $('downloadPptx').addEventListener('click',async()=>{
    s.addText('CLASSROOM TEACHING SLIDES',{x:1.05,y:3.25,w:7,h:.3,fontFace:'Aptos',fontSize:12,bold:true,charSpacing:1.4,color:C.orange,margin:0});
    s.addShape(pptx.ShapeType.roundRect,{x:1.02,y:4.15,w:10.9,h:1.35,rectRadius:.08,line:{color:'E1E6D9',width:1},fill:{color:C.white}});
    s.addText('Editable slides for modeling, guided practice, independent work, and checking for understanding.',{x:1.35,y:4.48,w:10.25,h:.65,fontFace:'Aptos',fontSize:18,color:C.ink,fit:'shrink',valign:'mid',margin:0});
-   s.addText('TEACHER PLAN  +  STUDENT HANDOUT',{x:1.05,y:6.2,w:8,h:.3,fontFace:'Aptos',fontSize:10,bold:true,charSpacing:1,color:C.muted,margin:0});
+   s.addText('LESSON PLAN  +  STUDENT PRACTICE  +  TEACHER KEY',{x:1.05,y:6.2,w:8,h:.3,fontFace:'Aptos',fontSize:10,bold:true,charSpacing:1,color:C.muted,margin:0});
   };
   const addSlide=(title,body,kind='content')=>{
    const s=pptx.addSlide('ROOTS');s.addText(names[kind]||title,{x:.62,y:.78,w:11.95,h:.62,fontFace:'Georgia',fontSize:25,bold:true,color:C.forest,margin:0,fit:'shrink'});
@@ -248,10 +249,11 @@ $('downloadPptx').addEventListener('click',async()=>{
   };
   addCover();
   addSlide('Learning objective','I can '+(generated.title||'meet today’s learning goal')+'.','objective');
-  addSections(generated.teacher,'Teacher Plan');
-  addSections(generated.student,'Student Handout');
+  addSections(generated.teacher,'Lesson Plan');
+  addSections(generated.practice,'Student Practice');
+  addSections(generated.key,'Teacher Key');
   await pptx.writeFile({fileName:'Chalk_Roots_Classroom_Teaching_Slides.pptx'});
-  $('status').textContent='Editable classroom teaching slides downloaded. Includes the teacher plan and student handout.';
+  $('status').textContent='Editable PowerPoint downloaded. Includes Lesson Plan, Student Practice, and Teacher Key.';
  }catch(err){$('status').textContent=err.message||'PowerPoint export failed.';}
 });
 </script></body></html>
