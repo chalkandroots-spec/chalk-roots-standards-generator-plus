@@ -80,12 +80,19 @@ EXTENSION: ${supports.extend?"Include":"Include a concise extension option"}
 Return valid JSON only.`;
  try{
   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{"Authorization":`Bearer ${env.OPENAI_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({model:env.OPENAI_MODEL||"gpt-6.1-sol",instructions:SYSTEM,input,text:{format:{type:"json_object"}},max_output_tokens:9000})});
-  const data=await response.json();
-  if(!response.ok)return Response.json({error:"The lesson service could not complete the request. Check the Cloudflare model/API configuration and try again."},{status:502,headers});
+  const responseText=await response.text();
+  let data;
+  try{data=JSON.parse(responseText);}catch{
+   return Response.json({error:"The lesson service returned an unreadable response (HTTP "+response.status+"). Check the OpenAI API key, account billing, and model access."},{status:502,headers});
+  }
+  if(!response.ok){
+   const detail=String(data?.error?.message||data?.message||"No details returned").slice(0,500);
+   return Response.json({error:"OpenAI API error (HTTP "+response.status+"): "+detail},{status:502,headers});
+  }
   const raw=(data.output||[]).flatMap(item=>item.content||[]).filter(part=>part.type==="output_text").map(part=>part.text).join("\n").trim();
   if(!raw)return Response.json({error:"The lesson service returned an empty response. Please try again."},{status:502,headers});
   let result;try{result=JSON.parse(raw);}catch{return Response.json({error:"The lesson service returned an unreadable format. Please try again."},{status:502,headers});}
   if(typeof result.title!=="string"||typeof result.teacher!=="string"||typeof result.student!=="string")return Response.json({error:"The lesson service returned incomplete teacher/student formats. Please try again."},{status:502,headers});
   return Response.json({title:result.title,teacher:result.teacher,student:result.student},{headers});
- }catch{return Response.json({error:"Connection problem. Please try again."},{status:502,headers});}
+ }catch(error){return Response.json({error:"Generator request failed: "+String(error?.message||"Unknown error").slice(0,300)},{status:502,headers});}
 }};
