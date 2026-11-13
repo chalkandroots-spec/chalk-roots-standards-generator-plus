@@ -1,9 +1,9 @@
 # Chalk & Roots Standards Generator Plus
 
-Branded K–12 standards-to-lesson builder. The front end preserves the campaign preview's official illustrated teacher avatar, warm cream/sage/terracotta palette, and two classroom outputs: **Teacher Plan** and **Student Handout**.
+Branded K–12 standards-to-lesson builder. The front end preserves the campaign preview's official illustrated teacher avatar, warm cream/sage/terracotta palette, and three classroom sections: **Lesson Plan**, **Student Practice**, and **Teacher Key**.
 
 ## Files
-- `index.html` — responsive interface, exact-standard input, grade/course, subject, framework, duration/sequence, focus, materials/context, learner supports, editable output, copy, Word-compatible export, print-to-PDF, and PowerPoint export.
+- `index.html` — responsive interface, exact-standard input, a searchable standards library, grade, subject, framework, exact standard wording, one-click generation, editable output, copy, Word-compatible export, PDF export, and editable PowerPoint export.
 - `worker.js` — Cloudflare Worker backend. The OpenAI API key remains server-side.
 - `wrangler.toml` — Worker configuration.
 
@@ -18,8 +18,8 @@ Branded K–12 standards-to-lesson builder. The front end preserves the campaign
 Never put API keys in browser code or the repository. Keep this repository private.
 
 ## Exports
-- PDF `.pdf` download includes both classroom formats: the Teacher Plan and Student Handout, with page numbering.
-- PowerPoint `.pptx` download includes both classroom formats and automatically paginates longer lessons.
+- PDF `.pdf` download includes all three sections: Lesson Plan, Student Practice, and Teacher Key, with page numbering.
+- PowerPoint `.pptx` download includes all three sections and automatically paginates longer lessons.
 - Word-compatible `.doc` export includes both classroom formats.
 - Print selected format remains available as a separate browser print option.
 - PDF and PowerPoint generation use browser libraries loaded from public CDNs, so an internet connection is required for those export buttons.
