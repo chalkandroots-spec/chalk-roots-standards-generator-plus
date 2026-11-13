@@ -88,11 +88,13 @@ async function searchLibrary(){
   if(!data.standards?.length){box.textContent='No matches yet. Try a code, grade-level skill, or another keyword.';return;}
   for(const item of data.standards){
    const b=document.createElement('button');b.type='button';b.className='standard-hit';
-   const title=document.createElement('strong');title.textContent='Grade '+item.grade+' · '+item.code+' — '+item.title;
+   const displayGrade=item.grade_band==='6-8'?'Grades 6–8':(Number(item.grade)===0?'Kindergarten':'Grade '+item.grade);
+   const title=document.createElement('strong');title.textContent=displayGrade+' · '+item.code+' — '+item.title;
    const summary=document.createElement('div');summary.textContent=item.summary||item.wording;
    b.append(title,summary);
    b.addEventListener('click',()=>{
-    $('grade').value=String(item.grade);$('subject').value=item.subject;$('framework').value=item.framework;$('code').value=item.code;$('standard').value=item.wording;
+    const gradeLabel=Number(item.grade)===0?'Kindergarten':'Grade '+item.grade;
+    $('grade').value=gradeLabel;$('subject').value=item.subject;$('framework').value=item.framework;$('code').value=item.code;$('standard').value=item.wording;
     box.textContent=item.code+' loaded. The exact standard wording and source are ready for lesson generation.';
     $('status').textContent='Standard loaded from the Chalk & Roots Standards Library.';
    });
