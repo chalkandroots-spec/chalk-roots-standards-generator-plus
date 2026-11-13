@@ -16,7 +16,7 @@ function cors(origin, allowed) {
 export default { async fetch(request,env) {
  const origin=request.headers.get("Origin")||"",allowed=env.ALLOWED_ORIGIN||"",headers=cors(origin,allowed);
  if(request.method==="OPTIONS")return new Response(null,{status:204,headers});
- if(allowed&&origin!==allowed)return Response.json({error:"Origin not allowed."},{status:403,headers});
+ if(allowed&&origin&&origin!==allowed)return Response.json({error:"Origin not allowed."},{status:403,headers});
 
  const url=new URL(request.url);
  // Persistent standards library: Cloudflare D1 binding is named DB.
