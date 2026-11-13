@@ -48,7 +48,7 @@ footer{text-align:center;padding:28px;color:#777967;font:12px Arial,sans-serif}
  <div id="libraryResults" role="status" style="margin-top:8px;font:13px Arial,sans-serif"></div>
  </section>
 <form id="generator">
-<label for="grade">Grade level</label><select id="grade"><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option selected>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
+<label for="grade">Grade level</label><select id="grade"><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option selected>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grades 6–8</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
 <div class="grid2"><div><label for="subject">Subject / learning area</label><input id="subject" placeholder="e.g., ELA, math, science" required></div><div><label for="framework">Framework</label><input id="framework" placeholder="e.g., Common Core, TEKS"></div></div>
 <label for="code">Standard code (optional)</label><input id="code" placeholder="e.g., RI.4.2 or 4.NF.B.3">
 <label for="standard">Exact standard wording</label><textarea id="standard" placeholder="Paste the complete wording of the standard here. This helps keep the lesson accurately aligned." required></textarea>
@@ -88,12 +88,11 @@ async function searchLibrary(){
   if(!data.standards?.length){box.textContent='No matches yet. Try a code, grade-level skill, or another keyword.';return;}
   for(const item of data.standards){
    const b=document.createElement('button');b.type='button';b.className='standard-hit';
-   const displayGrade=item.grade_band==='6-8'?'Grades 6–8':(Number(item.grade)===0?'Kindergarten':'Grade '+item.grade);
-   const title=document.createElement('strong');title.textContent=displayGrade+' · '+item.code+' — '+item.title;
+   const title=document.createElement('strong');title.textContent='Grade '+item.grade+' · '+item.code+' — '+item.title;
    const summary=document.createElement('div');summary.textContent=item.summary||item.wording;
    b.append(title,summary);
    b.addEventListener('click',()=>{
-    const gradeLabel=Number(item.grade)===0?'Kindergarten':'Grade '+item.grade;
+    const gradeLabel=item.grade_band==='6-8'?'Grades 6–8':(Number(item.grade)===0?'Kindergarten':'Grade '+item.grade);
     $('grade').value=gradeLabel;$('subject').value=item.subject;$('framework').value=item.framework;$('code').value=item.code;$('standard').value=item.wording;
     box.textContent=item.code+' loaded. The exact standard wording and source are ready for lesson generation.';
     $('status').textContent='Standard loaded from the Chalk & Roots Standards Library.';
@@ -113,7 +112,7 @@ $('generator').addEventListener('submit',async e=>{
 e.preventDefault();const payload={grade:$('grade').value,subject:$('subject').value.trim(),framework:$('framework').value.trim(),code:$('code').value.trim(),standard:$('standard').value.trim(),duration:$('duration').value,scope:$('sequence').value,focus:$('focus').value.trim(),materials:$('materials').value.trim(),supports:{eld:$('eld').checked,scaffold:$('scaffold').checked,extend:$('extend').checked}};
 if(!payload.subject||!payload.standard){$('status').textContent='Please enter the subject and exact standard wording.';return;}
 $('generate').disabled=true;$('generate').textContent='Building your lesson…';$('status').textContent='Creating both classroom formats…';
-try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await r.json();if(!r.ok)throw new Error(data.error||'The generator could not complete this request.');generated=data;activeTab='teacher';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='teacher'));$('empty').hidden=true;$('output').hidden=false;$('outTitle').textContent=data.title||'Your lesson is ready';$('outSub').textContent=payload.grade+' · '+payload.subject+' · '+payload.scope;render();$('status').textContent='Your lesson is ready. Review and adapt before teaching.';}catch(err){$('status').textContent=err.message+' Check that the Cloudflare Worker is connected and configured.';}finally{$('generate').disabled=false;$('generate').textContent='Generate my Chalk & Roots lesson →';}
+try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const responseText=await r.text();let data;try{data=JSON.parse(responseText);}catch{throw new Error('The generator returned an empty or unreadable response (HTTP '+r.status+'). Refresh the page and try once more.');}if(!r.ok)throw new Error(data.error||('The generator could not complete this request (HTTP '+r.status+').'));generated=data;activeTab='teacher';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='teacher'));$('empty').hidden=true;$('output').hidden=false;$('outTitle').textContent=data.title||'Your lesson is ready';$('outSub').textContent=payload.grade+' · '+payload.subject+' · '+payload.scope;render();$('status').textContent='Your lesson is ready. Review and adapt before teaching.';}catch(err){$('status').textContent=err.message+' Check that the Cloudflare Worker is connected and configured.';}finally{$('generate').disabled=false;$('generate').textContent='Generate my Chalk & Roots lesson →';}
 });
 function docHtml(){return `<!doctype html><html><head><meta charset="utf-8"><title>${safe(generated.title)}</title><style>body{font:11pt Calibri,Arial;color:#333;line-height:1.5}h1,h2{color:#294d3d}h1{font: bold 22pt Georgia} .brand{color:#294d3d;font-weight:bold;letter-spacing:2px}</style></head><body><p class="brand">CHALK & ROOTS</p><h1>${safe(generated.title)}</h1><h2>Teacher lesson plan</h2><p>${safe(generated.teacher).replace(/\n/g,'<br>')}</p><h2>Student handout</h2><p>${safe(generated.student).replace(/\n/g,'<br>')}</p><p>chalkandroots.com</p></body></html>`;}
 $('downloadWord').addEventListener('click',()=>{const blob=new Blob([docHtml()],{type:'application/msword'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Chalk_Roots_Lesson.doc';a.click();URL.revokeObjectURL(url);});
@@ -199,56 +198,72 @@ $('downloadPptx').addEventListener('click',async()=>{
  if(!generated)return;
  try{
   if(typeof window.PptxGenJS!=='function')throw new Error('The PowerPoint export library did not load. Check your internet connection and try again.');
-  const pptx=new window.PptxGenJS();pptx.layout='LAYOUT_WIDE';pptx.author='Chalk & Roots';pptx.subject='Standards-based lesson';
+  const pptx=new window.PptxGenJS();pptx.layout='LAYOUT_WIDE';pptx.author='Chalk & Roots';pptx.subject='Editable classroom teaching slides';
   pptx.theme={headFontFace:'Aptos Display',bodyFontFace:'Aptos',lang:'en-US'};
-  const addHeader=(slide,title,page)=>{
-   slide.background={color:'FAF7F2'};
-   slide.addText('CHALK & ROOTS',{x:.55,y:.3,w:4,h:.25,fontSize:10,bold:true,charSpacing:2,color:'7A9B7A'});
-   slide.addText(title,{x:.55,y:.85,w:12.1,h:.6,fontFace:'Georgia',fontSize:25,bold:true,color:'294D3D'});
-   slide.addText('chalkandroots.com',{x:.55,y:7.12,w:5,h:.2,fontSize:9,color:'71675F'});
-   slide.addText(String(page),{x:12.1,y:7.12,w:.65,h:.2,fontSize:9,color:'71675F',align:'right'});
+  const C={forest:'294D3D',sage2:'EEF2E8',cream:'FAF7F0',white:'FFFFFF',orange:'B85F43',ink:'34372F',muted:'6E7468',gold:'D9B66A',line:'E4E2D7'};
+  pptx.defineSlideMaster({title:'ROOTS',background:{color:C.cream},objects:[
+   {rect:{x:0,y:0,w:13.333,h:.12,line:{color:C.forest,transparency:100},fill:{color:C.forest}}},
+   {text:{text:'CHALK & ROOTS  •  EXPLORE · QUESTION · LEARN',options:{x:.55,y:.28,w:8,h:.22,fontFace:'Aptos',fontSize:9,bold:true,charSpacing:1.4,color:'64806A',margin:0}}},
+   {text:{text:'chalkandroots.com',options:{x:.55,y:7.15,w:4,h:.16,fontFace:'Aptos',fontSize:8,color:'827E70',margin:0}}}
+  ],slideNumber:{x:12.2,y:7.13,color:'827E70',fontFace:'Aptos',fontSize:8}});
+  const clean=s=>String(s||'').replace(/\r/g,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1').trim();
+  const splitSections=raw=>{
+   const rows=String(raw||'').replace(/\r/g,'').split('\n'),out=[];let cur={title:'Lesson notes',body:[]};
+   for(const row of rows){const m=row.trim().match(/^#{1,3}\s+(.+)$/);if(m){if(cur.body.length)out.push(cur);cur={title:clean(m[1]),body:[]};}else if(row.trim())cur.body.push(row.trim());}
+   if(cur.body.length)out.push(cur);return out;
   };
-  const wrapText=(value,max=132)=>{
-   const words=String(value||'').split(/\s+/);const out=[];let line='';
-   for(const word of words){
-    if(!word)continue;
-    if(line&&line.length+word.length+1>max){out.push(line);line=word;}else line+=(line?' ':'')+word;
+  const classify=t=>{const s=t.toLowerCase();
+   if(/objective|learning target|success criteria|goal/.test(s))return'objective';
+   if(/model|think.?aloud|teach|mini.?lesson|explicit instruction/.test(s))return'teach';
+   if(/worked example|example|i do/.test(s))return'example';
+   if(/guided|collaborative|we do|partner/.test(s))return'guided';
+   if(/independent|you do|practice/.test(s))return'practice';
+   if(/check|assessment|understanding|formative/.test(s))return'check';
+   if(/exit ticket|closing|reflection/.test(s))return'exit';
+   if(/answer key|exemplar|teacher notes|verification|materials|preparation/.test(s))return'teacher';
+   return'content';
+  };
+  const names={objective:'Today’s learning goal',teach:'Teach the pattern',example:'Let’s work through an example',guided:'Let’s try it together',practice:'Your turn: independent practice',check:'Check for understanding',exit:'Show what you know',teacher:'Teacher notes & answer guidance'};
+  const addCover=()=>{
+   const s=pptx.addSlide();s.background={color:C.cream};
+   s.addShape(pptx.ShapeType.rect,{x:.55,y:.62,w:.16,h:5.95,line:{color:C.orange,transparency:100},fill:{color:C.orange}});
+   s.addText('CHALK & ROOTS',{x:1.02,y:.9,w:6,h:.35,fontFace:'Aptos',fontSize:13,bold:true,charSpacing:2,color:C.forest,margin:0});
+   s.addText(generated.title||'A lesson that grows',{x:1.02,y:1.8,w:10.9,h:1.15,fontFace:'Georgia',fontSize:34,bold:true,color:C.forest,fit:'shrink',margin:0});
+   s.addText('CLASSROOM TEACHING SLIDES',{x:1.05,y:3.25,w:7,h:.3,fontFace:'Aptos',fontSize:12,bold:true,charSpacing:1.4,color:C.orange,margin:0});
+   s.addShape(pptx.ShapeType.roundRect,{x:1.02,y:4.15,w:10.9,h:1.35,rectRadius:.08,line:{color:'E1E6D9',width:1},fill:{color:C.white}});
+   s.addText('Editable slides for modeling, guided practice, independent work, and checking for understanding.',{x:1.35,y:4.48,w:10.25,h:.65,fontFace:'Aptos',fontSize:18,color:C.ink,fit:'shrink',valign:'mid',margin:0});
+   s.addText('TEACHER PLAN  +  STUDENT HANDOUT',{x:1.05,y:6.2,w:8,h:.3,fontFace:'Aptos',fontSize:10,bold:true,charSpacing:1,color:C.muted,margin:0});
+  };
+  const addSlide=(title,body,kind='content')=>{
+   const s=pptx.addSlide('ROOTS');s.addText(names[kind]||title,{x:.62,y:.78,w:11.95,h:.62,fontFace:'Georgia',fontSize:25,bold:true,color:C.forest,margin:0,fit:'shrink'});
+   s.addShape(pptx.ShapeType.line,{x:.65,y:1.53,w:12,h:0,line:{color:C.gold,width:1.4}});
+   const items=String(body||'').split('\n').map(clean).filter(Boolean);
+   if(kind==='objective'){
+    s.addShape(pptx.ShapeType.roundRect,{x:.85,y:2.05,w:11.6,h:2,rectRadius:.1,line:{color:'D8E4D1',width:1},fill:{color:C.sage2}});
+    s.addText(items[0]||'I can explain and use today’s learning.',{x:1.25,y:2.55,w:10.8,h:.95,fontFace:'Georgia',fontSize:25,bold:true,color:C.forest,align:'center',valign:'mid',fit:'shrink',margin:.05});
+    if(items.length>1)s.addText(items.slice(1).join('\n'),{x:1.15,y:4.45,w:11,h:1.25,fontFace:'Aptos',fontSize:17,color:C.ink,fit:'shrink',margin:.1});
+    return;
    }
-   if(line)out.push(line);return out.length?out:[''];
+   const shown=items.slice(0,7),prompt=['guided','practice','check','exit'].includes(kind),n=Math.max(1,shown.length),h=Math.min(.76,(4.85-(n-1)*.16)/n);
+   shown.forEach((item,i)=>{const y=1.9+i*(h+.16);
+    s.addShape(pptx.ShapeType.roundRect,{x:.82,y,w:11.7,h,rectRadius:.06,line:{color:prompt?'E9D4C8':C.line,width:1},fill:{color:prompt?'FFF8F1':(i%2?C.white:C.sage2)}});
+    s.addShape(pptx.ShapeType.ellipse,{x:1.02,y:y+h/2-.16,w:.32,h:.32,line:{color:C.orange,width:1},fill:{color:C.orange}});
+    s.addText(String(i+1),{x:1.02,y:y+h/2-.115,w:.32,h:.2,fontFace:'Aptos',fontSize:9,bold:true,color:C.white,align:'center',margin:0});
+    s.addText(item.replace(/^[-•]\s*/,''),{x:1.55,y:y+.08,w:10.55,h:h-.16,fontFace:'Aptos',fontSize:kind==='teacher'?15:18,color:C.ink,fit:'shrink',valign:'mid',margin:.02});
+   });
+   s.addText('CHALK & ROOTS  •  '+(kind==='teacher'?'TEACHER REFERENCE':'LEARN · PRACTICE · REFLECT'),{x:.72,y:6.78,w:10,h:.18,fontFace:'Aptos',fontSize:8,bold:true,charSpacing:.8,color:C.muted,margin:0});
   };
-  const addSection=(heading,body)=>{
-   let page=1,slide=pptx.addSlide(),y=1.65;addHeader(slide,heading,page);
-   const newSlide=()=>{page++;slide=pptx.addSlide();addHeader(slide,heading,page);y=1.65;};
-   const addRow=(text,kind='body')=>{
-    const fontSize=kind==='heading'?14:kind==='number'?12:11.5;
-    const lineH=kind==='heading'?.31:.235;
-    const color=kind==='heading'?'294D3D':kind==='number'?'4A3428':'35302B';
-    const fontFace=kind==='heading'?'Georgia':'Aptos';
-    const bold=kind!=='body';
-    const lines=wrapText(text,kind==='heading'?105:132);
-    for(const line of lines){
-     if(y+lineH>6.85)newSlide();
-     slide.addText(line,{x:.72,y,w:11.9,h:lineH,fontFace,fontSize,bold,color,margin:0,breakLine:false,fit:'shrink',valign:'mid'});
-     y+=lineH;
-    }
-    if(kind!=='heading')y+=.045;
-   };
-   for(const raw of String(body||'').replace(/\r/g,'').split('\n')){
-    const line=raw.trim();
-    if(!line){y+=.11;if(y>6.8)newSlide();continue;}
-    const headingMatch=line.match(/^#{1,3}\s+(.+)$/);
-    const numberMatch=line.match(/^(\d+[\.\)]\s+.+)$/);
-    const bulletMatch=line.match(/^[-*]\s+(.+)$/);
-    if(headingMatch){y+=.04;addRow(headingMatch[1].replace(/\*\*/g,''),'heading');}
-    else if(numberMatch)addRow(numberMatch[1].replace(/\*\*/g,''),'number');
-    else if(bulletMatch)addRow('- '+bulletMatch[1].replace(/\*\*/g,''),'body');
-    else addRow(line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1'),'body');
-   }
+  const addSections=(raw,label)=>{
+   const parts=splitSections(raw);
+   if(!parts.length){addSlide(label,'Use the editable lesson content to guide instruction.');return;}
+   parts.forEach(p=>{const kind=classify(p.title),cap=7;for(let i=0;i<p.body.length;i+=cap)addSlide(p.title,p.body.slice(i,i+cap).join('\n'),kind);});
   };
-  addSection('Teacher Plan',generated.teacher);
-  addSection('Student Handout',generated.student);
-  await pptx.writeFile({fileName:'Chalk_Roots_Lesson.pptx'});
-  $('status').textContent='PowerPoint downloaded with both the Teacher Plan and Student Handout.';
+  addCover();
+  addSlide('Learning objective','I can '+(generated.title||'meet today’s learning goal')+'.','objective');
+  addSections(generated.teacher,'Teacher Plan');
+  addSections(generated.student,'Student Handout');
+  await pptx.writeFile({fileName:'Chalk_Roots_Classroom_Teaching_Slides.pptx'});
+  $('status').textContent='Editable classroom teaching slides downloaded. Includes the teacher plan and student handout.';
  }catch(err){$('status').textContent=err.message||'PowerPoint export failed.';}
 });
 </script></body></html>
