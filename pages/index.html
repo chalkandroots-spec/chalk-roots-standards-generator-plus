@@ -34,42 +34,26 @@ footer{text-align:center;padding:28px;color:#777967;font:12px Arial,sans-serif}
   <div><div class="brandname">CHALK & ROOTS</div><div class="tagline">LITERACY • PHONICS • SYLLABLES • K–8</div></div>
 </header>
 <main>
-<section class="hero"><div><div class="eyebrow">THE STANDARDS GENERATOR</div><h1>Plant the standard.<br>Build the lesson.</h1><p>Start with the exact standard. Get a practical teacher plan and a student-ready companion—then edit, export, and make it yours.</p></div><div class="sprout" aria-hidden="true">✿</div></section>
+<section class="hero"><div><div class="eyebrow">THE STANDARDS GENERATOR</div><h1>One standard.<br>Three ready-to-use sections.</h1><p>Choose a standard and get a Lesson Plan, Student Practice, and Teacher Key—downloadable as a PDF and editable PowerPoint.</p></div><div class="sprout" aria-hidden="true">✿</div></section>
 <div class="layout">
 <section class="card">
-<h2>Set your lesson up</h2><p class="sub">A few details, a useful starting point.</p>
-<section class="note" style="margin:0 0 16px;border-left-color:var(--terracotta)">
- <strong style="color:var(--forest)">Standards Library</strong>
- <p style="margin:5px 0 8px">Search the saved standards by code, grade, subject, or skill. Select a result to load its exact wording.</p>
- <div style="display:grid;grid-template-columns:1fr 105px;gap:8px">
-  <input id="libraryQuery" type="search" placeholder="e.g. syllable, main idea, W.4.1" aria-label="Search standards library">
-  <button class="secondary" id="librarySearch" type="button">Search</button>
- </div>
- <div id="libraryResults" role="status" style="margin-top:8px;font:13px Arial,sans-serif"></div>
- </section>
+<h2>Choose your standard</h2><p class="sub">Find the standard. Generate the files. No extra lesson-building steps.</p>
+<section class="note" style="margin:0 0 16px;border-left-color:var(--terracotta)"><strong style="color:var(--forest)">Standards Library</strong><p style="margin:5px 0 8px">Search by code, grade, subject, or skill. Choose a result to load the exact wording.</p><div style="display:grid;grid-template-columns:1fr 105px;gap:8px"><input id="libraryQuery" type="search" placeholder="e.g. syllable, main idea, W.4.1" aria-label="Search standards library"><button class="secondary" id="librarySearch" type="button">Search</button></div><div id="libraryResults" role="status" style="margin-top:8px;font:13px Arial,sans-serif"></div></section>
 <form id="generator">
 <label for="grade">Grade level</label><select id="grade"><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option selected>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grades 6–8</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
-<div class="grid2"><div><label for="subject">Subject / learning area</label><input id="subject" placeholder="e.g., ELA, math, science" required></div><div><label for="framework">Framework</label><input id="framework" placeholder="e.g., Common Core, TEKS"></div></div>
-<label for="code">Standard code (optional)</label><input id="code" placeholder="e.g., RI.4.2 or 4.NF.B.3">
-<label for="standard">Exact standard wording</label><textarea id="standard" placeholder="Paste the complete wording of the standard here. This helps keep the lesson accurately aligned." required></textarea>
-<div class="grid2"><div><label for="duration">Lesson duration</label><select id="duration"><option>20 minutes</option><option>30 minutes</option><option selected>45 minutes</option><option>60 minutes</option><option>90 minutes</option></select></div><div><label for="sequence">Planning scope</label><select id="sequence"><option>One lesson</option><option>Two connected lessons</option><option>Five-day sequence</option><option>Two-week unit</option></select></div></div>
-<label for="focus">Specific focus or student need (optional)</label><input id="focus" placeholder="e.g., multisyllabic words, fractions, evidence">
-<label for="materials">Text, materials, or context (optional)</label><textarea id="materials" style="min-height:72px" placeholder="Paste a short excerpt, describe available materials, or add context."></textarea>
-<div class="checkrow"><input id="eld" type="checkbox"><label for="eld" style="margin:0">Include English language development supports</label></div>
-<div class="checkrow"><input id="scaffold" type="checkbox" checked><label for="scaffold" style="margin:0">Include scaffolds, reteaching, and differentiation</label></div>
-<div class="checkrow"><input id="extend" type="checkbox"><label for="extend" style="margin:0">Include enrichment / extension</label></div>
-<button class="primary" id="generate" type="submit">Generate my Chalk & Roots lesson →</button>
-<div class="status" id="status" role="status">Ready when you are.</div>
-<div class="note">Use the exact wording of your local or adopted standard. After generating, use the results panel to download both formats in one PowerPoint (.pptx). AI drafts; you verify alignment, examples, and answer guidance before teaching.</div>
+<div class="grid2"><div><label for="subject">Subject</label><input id="subject" value="ELA" required></div><div><label for="framework">Framework</label><input id="framework" value="CCSS"></div></div>
+<label for="code">Standard code</label><input id="code" placeholder="e.g., RF.4.3a">
+<label for="standard">Exact standard wording</label><textarea id="standard" placeholder="Choose a library result or paste the complete standard wording." required></textarea>
+<button class="primary" id="generate" type="submit">Generate my PDF + editable PowerPoint →</button><div class="status" id="status" role="status">Choose a standard to begin.</div><div class="note">One click creates three classroom sections—Lesson Plan, Student Practice, and Teacher Key—with a PDF and editable PowerPoint download. Review generated materials before teaching.</div>
 </form></section>
 <section class="card">
 <div class="output-head"><div><div class="eyebrow">YOUR CLASSROOM-READY DRAFT</div><h2 id="outTitle">Your lesson is taking shape</h2><p class="sub" id="outSub">A practical plan. Ready to adapt.</p></div><span class="pill">CHALK & ROOTS</span></div>
 <div id="empty" class="empty"><div class="sprout">✿</div><h3>A small starting point.<br>A whole lesson ahead.</h3><p>Enter a standard and choose Generate.<br>We’ll bring the structure. You bring the teaching.</p></div>
 <div id="output" hidden>
-<div class="toolbar"><button class="secondary" id="downloadWord">Download Word-compatible .doc</button><button class="secondary" id="downloadPdf" type="button">Download both formats as PDF (.pdf)</button><button class="secondary" id="downloadPptx" type="button">Download both formats as PowerPoint (.pptx)</button><button class="secondary" id="print">Print selected format</button><button class="secondary" id="copy">Copy text</button></div>
-<div class="tabs"><button class="active" data-tab="teacher">Teacher plan</button><button data-tab="student">Student handout</button></div>
+<div class="toolbar"><button class="secondary" id="downloadWord">Download Word-compatible .doc</button><button class="secondary" id="downloadPdf" type="button">Download PDF (.pdf)</button><button class="secondary" id="downloadPptx" type="button">Download editable PowerPoint (.pptx)</button><button class="secondary" id="print">Print selected format</button><button class="secondary" id="copy">Copy text</button></div>
+<div class="tabs"><button class="active" data-tab="teacher">Lesson Plan</button><button data-tab="practice">Student Practice</button><button data-tab="key">Teacher Key</button></div>
 <div class="result" id="result"></div>
-<div class="note">Download options include both classroom formats together: the Teacher Plan and Student Handout in one PDF or one editable PowerPoint (.pptx). Print selected format is available separately.</div>
+<div class="note">Both downloads include the Lesson Plan, Student Practice, and Teacher Key. The PowerPoint is editable.</div>
 </div>
 </section></div></main>
 <footer>Chalk & Roots · Explore. Question. Learn. · chalkandroots.com</footer>
