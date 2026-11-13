@@ -76,6 +76,7 @@ footer{text-align:center;padding:28px;color:#777967;font:12px Arial,sans-serif}
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script>
+const $=id=>document.getElementById(id);
 const API_URL='https://chalk-roots-standards-generator-plus.chalkandroots.workers.dev/';
 async function searchLibrary(){
  const box=$('libraryResults');box.textContent='Searching the Chalk & Roots library…';
@@ -102,7 +103,7 @@ async function searchLibrary(){
 $('librarySearch').addEventListener('click',searchLibrary);
 $('libraryQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchLibrary();}});
 
-const $=id=>document.getElementById(id);let generated=null,activeTab='teacher';
+let generated=null,activeTab='teacher';
 function safe(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function render(){if(!generated)return;const d=generated[activeTab];$('result').innerHTML='<h3>'+safe(activeTab==='teacher'?'Teacher lesson plan':'Student handout')+'</h3>'+safe(d).replace(/\n/g,'<br>');}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));render();}));
