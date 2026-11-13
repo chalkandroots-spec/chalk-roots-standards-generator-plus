@@ -92,7 +92,8 @@ async function searchLibrary(){
    const summary=document.createElement('div');summary.textContent=item.summary||item.wording;
    b.append(title,summary);
    b.addEventListener('click',()=>{
-    $('grade').value=String(item.grade);$('subject').value=item.subject;$('framework').value=item.framework;$('code').value=item.code;$('standard').value=item.wording;
+    const gradeLabel=Number(item.grade)===0?'Kindergarten':'Grade '+item.grade;
+    $('grade').value=gradeLabel;$('subject').value=item.subject;$('framework').value=item.framework;$('code').value=item.code;$('standard').value=item.wording;
     box.textContent=item.code+' loaded. The exact standard wording and source are ready for lesson generation.';
     $('status').textContent='Standard loaded from the Chalk & Roots Standards Library.';
    });
