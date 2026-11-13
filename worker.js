@@ -25,12 +25,14 @@ export default { async fetch(request,env) {
   const q=(url.searchParams.get("q")||"").trim().slice(0,160);
   const hasGrade=url.searchParams.has("grade");
   const grade=Number(url.searchParams.get("grade"));
+  const gradeBand=(url.searchParams.get("gradeBand")||"").trim();
   const subject=(url.searchParams.get("subject")||"").trim().slice(0,40);
   const framework=(url.searchParams.get("framework")||"").trim().slice(0,60);
   const limit=Math.min(100,Math.max(1,Number(url.searchParams.get("limit")||50)));
   let sql="SELECT id,framework,jurisdiction,subject,grade,grade_band,strand,code,title,wording,summary,keywords,official_url,source_name,source_checked_at,curated FROM standards WHERE 1=1";
   const args=[];
-  if(hasGrade&&Number.isInteger(grade)&&grade>=0&&grade<=12){if(grade>=6&&grade<=8){sql+=" AND (grade=? OR grade_band=?)";args.push(grade,"6-8");}else{sql+=" AND grade=?";args.push(grade);}}
+  if(gradeBand==="6-8"){sql+=" AND grade_band=?";args.push("6-8");}
+  else if(hasGrade&&Number.isInteger(grade)&&grade>=0&&grade<=12){sql+=" AND grade=?";args.push(grade);}
   if(subject){sql+=" AND subject=?";args.push(subject);}
   if(framework){sql+=" AND framework=?";args.push(framework);}
   if(q){sql+=" AND (code LIKE ? OR title LIKE ? OR wording LIKE ? OR summary LIKE ? OR keywords LIKE ? OR strand LIKE ?)";for(let i=0;i<6;i++)args.push("%"+q+"%");}
