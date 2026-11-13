@@ -82,7 +82,10 @@ async function searchLibrary(){
  const box=$('libraryResults');box.textContent='Searching the Chalk & Roots library…';
  try{
   const term=$('libraryQuery').value.trim();
-  const r=await fetch(API_URL+'api/standards?q='+encodeURIComponent(term)+'&limit=50');
+  const gradeLabel=$('grade').value;
+  const grade=gradeLabel==='Kindergarten'?0:(gradeLabel==='Grades 6–8'?6:Number(gradeLabel.replace('Grade ','')));
+  const params=new URLSearchParams({q:term,grade:String(grade),limit:'50'});
+  const r=await fetch(API_URL+'api/standards?'+params.toString());
   const data=await r.json();if(!r.ok)throw new Error(data.error||'Library unavailable');
   box.replaceChildren();
   if(!data.standards?.length){box.textContent='No matches yet. Try a code, grade-level skill, or another keyword.';return;}
