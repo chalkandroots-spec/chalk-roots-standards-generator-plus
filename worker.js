@@ -5,9 +5,10 @@
  */
 const SYSTEM = `You are the instructional design assistant for Chalk & Roots.
 Create rigorous, practical, classroom-ready K–12 lessons. The teacher supplies the exact standard wording. Preserve its code and wording exactly. Never invent a standard, code, official citation, or alignment claim. If wording is incomplete or unclear, flag that for teacher verification while still producing a useful draft.
-Return ONLY valid JSON with exactly three string properties: title, teacher, student.
+Return ONLY valid JSON with exactly four string properties: title, teacher, practice, key.
 TEACHER must be a complete teacher-facing lesson plan with: standard and unpacking; measurable learning targets and success criteria; materials and preparation; explicit modeling/think-aloud; guided and collaborative practice; independent practice; timed lesson sequence matching the requested duration; checks for understanding; assessment and exit ticket; answer key/exemplar responses; selected differentiation and ELD supports; teacher reflection and next steps; a brief verification note. For multi-day sequences, give a coherent progression with daily focus and deliverables.
-STUDENT must be a separate, student-ready handout aligned to the same standard. Include a clear learning goal, concise directions, worked example(s) when useful, scaffolded practice, independent tasks, space/prompts for explaining thinking, and a student self-check. Do not include teacher-only answers in the student handout.
+PRACTICE must be a separate, student-ready practice sheet aligned to the same standard. Include a clear learning goal, concise directions, worked example(s) when useful, scaffolded practice, independent tasks, space/prompts for explaining thinking, and a student self-check. Do not include teacher-only answers.
+KEY must be a separate teacher-only answer key for every practice item, with exemplar responses, look-fors, and brief notes about likely errors or acceptable variations. Never place answers in the student practice sheet.
 Make both formats specific to the standard, grade/course, subject, focus, duration, context, and selected supports. Use accessible, polished language. Do not fabricate source texts or data; provide original examples or clearly label teacher-provided materials. Teacher verifies all content before instruction.`;
 function cors(origin, allowed) {
  const ok=!allowed||allowed==="*"||origin===allowed;
@@ -96,7 +97,7 @@ Return valid JSON only.`;
   const raw=(data.output||[]).flatMap(item=>item.content||[]).filter(part=>part.type==="output_text").map(part=>part.text).join("\n").trim();
   if(!raw)return Response.json({error:"The lesson service returned an empty response. Please try again."},{status:502,headers});
   let result;try{result=JSON.parse(raw);}catch{return Response.json({error:"The lesson service returned an unreadable format. Please try again."},{status:502,headers});}
-  if(typeof result.title!=="string"||typeof result.teacher!=="string"||typeof result.student!=="string")return Response.json({error:"The lesson service returned incomplete teacher/student formats. Please try again."},{status:502,headers});
-  return Response.json({title:result.title,teacher:result.teacher,student:result.student},{headers});
+  if(typeof result.title!=="string"||typeof result.teacher!=="string"||typeof result.practice!=="string"||typeof result.key!=="string")return Response.json({error:"The lesson service returned incomplete lesson, student practice, or teacher key sections. Please try again."},{status:502,headers});
+  return Response.json({title:result.title,teacher:result.teacher,practice:result.practice,key:result.key},{headers});
  }catch(error){return Response.json({error:"Generator request failed: "+String(error?.message||"Unknown error").slice(0,300)},{status:502,headers});}
 }};
