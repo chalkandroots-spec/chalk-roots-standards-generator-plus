@@ -48,7 +48,7 @@ footer{text-align:center;padding:28px;color:#777967;font:12px Arial,sans-serif}
  <div id="libraryResults" role="status" style="margin-top:8px;font:13px Arial,sans-serif"></div>
  </section>
 <form id="generator">
-<label for="grade">Grade level</label><select id="grade"><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option selected>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
+<label for="grade">Grade level</label><select id="grade"><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option selected>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grades 6–8</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
 <div class="grid2"><div><label for="subject">Subject / learning area</label><input id="subject" placeholder="e.g., ELA, math, science" required></div><div><label for="framework">Framework</label><input id="framework" placeholder="e.g., Common Core, TEKS"></div></div>
 <label for="code">Standard code (optional)</label><input id="code" placeholder="e.g., RI.4.2 or 4.NF.B.3">
 <label for="standard">Exact standard wording</label><textarea id="standard" placeholder="Paste the complete wording of the standard here. This helps keep the lesson accurately aligned." required></textarea>
@@ -92,7 +92,7 @@ async function searchLibrary(){
    const summary=document.createElement('div');summary.textContent=item.summary||item.wording;
    b.append(title,summary);
    b.addEventListener('click',()=>{
-    const gradeLabel=Number(item.grade)===0?'Kindergarten':'Grade '+item.grade;
+    const gradeLabel=item.grade_band==='6-8'?'Grades 6–8':(Number(item.grade)===0?'Kindergarten':'Grade '+item.grade);
     $('grade').value=gradeLabel;$('subject').value=item.subject;$('framework').value=item.framework;$('code').value=item.code;$('standard').value=item.wording;
     box.textContent=item.code+' loaded. The exact standard wording and source are ready for lesson generation.';
     $('status').textContent='Standard loaded from the Chalk & Roots Standards Library.';
