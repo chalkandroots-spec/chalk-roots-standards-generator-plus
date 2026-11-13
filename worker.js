@@ -55,6 +55,7 @@ export default { async fetch(request,env) {
   try{const result=await env.DB.batch(batch);return Response.json({saved:items.length,results:result.length},{status:201,headers});}
   catch{return Response.json({error:"Import failed. Check for duplicate identifiers or invalid field values."},{status:500,headers});}
  }
+ if(request.method==="GET" && env.ASSETS)return env.ASSETS.fetch(request);
  if(request.method!=="POST")return Response.json({error:"Use POST to generate a lesson."},{status:405,headers});
  if(!env.OPENAI_API_KEY)return Response.json({error:"Generator setup is incomplete. The API key is not configured."},{status:503,headers});
  let body;try{body=await request.json();}catch{return Response.json({error:"Please submit valid form details."},{status:400,headers});}
