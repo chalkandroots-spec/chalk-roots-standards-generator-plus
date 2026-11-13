@@ -66,14 +66,15 @@ footer{text-align:center;padding:28px;color:#777967;font:12px Arial,sans-serif}
 <div class="output-head"><div><div class="eyebrow">YOUR CLASSROOM-READY DRAFT</div><h2 id="outTitle">Your lesson is taking shape</h2><p class="sub" id="outSub">A practical plan. Ready to adapt.</p></div><span class="pill">CHALK & ROOTS</span></div>
 <div id="empty" class="empty"><div class="sprout">✿</div><h3>A small starting point.<br>A whole lesson ahead.</h3><p>Enter a standard and choose Generate.<br>We’ll bring the structure. You bring the teaching.</p></div>
 <div id="output" hidden>
-<div class="toolbar"><button class="secondary" id="downloadWord">Download Word-compatible .doc</button><button class="secondary" id="downloadPptx" type="button">Download both formats as PowerPoint (.pptx)</button><button class="secondary" id="print">Print / Save as PDF</button><button class="secondary" id="copy">Copy text</button></div>
+<div class="toolbar"><button class="secondary" id="downloadWord">Download Word-compatible .doc</button><button class="secondary" id="downloadPdf" type="button">Download both formats as PDF (.pdf)</button><button class="secondary" id="downloadPptx" type="button">Download both formats as PowerPoint (.pptx)</button><button class="secondary" id="print">Print selected format</button><button class="secondary" id="copy">Copy text</button></div>
 <div class="tabs"><button class="active" data-tab="teacher">Teacher plan</button><button data-tab="student">Student handout</button></div>
 <div class="result" id="result"></div>
-<div class="note">Your PowerPoint download includes both classroom formats: the editable Teacher Plan and the Student Handout. You can also print or save the selected format as a PDF.</div>
+<div class="note">Download options include both classroom formats together: the Teacher Plan and Student Handout in one PDF or one editable PowerPoint (.pptx). Print selected format is available separately.</div>
 </div>
 </section></div></main>
 <footer>Chalk & Roots · Explore. Question. Learn. · chalkandroots.com</footer>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script>
 const API_URL='https://chalk-roots-standards-generator-plus.chalkandroots.workers.dev/';
 async function searchLibrary(){
@@ -116,30 +117,135 @@ $('downloadWord').addEventListener('click',()=>{const blob=new Blob([docHtml()],
 $('print').addEventListener('click',()=>{const w=window.open('','_blank');if(!w){$('status').textContent='Allow pop-ups to print or save as PDF.';return;}w.document.write(`<!doctype html><html><head><title>${safe(generated.title)}</title><style>body{font:12pt Arial;line-height:1.5;color:#333;margin:36px}h1,h2{color:#294d3d}h1{font: bold 22pt Georgia} .brand{font-weight:bold;letter-spacing:2px;color:#294d3d}@media print{body{margin:18mm}}</style></head><body><p class="brand">CHALK & ROOTS</p><h1>${safe(generated.title)}</h1><h2>${activeTab==='teacher'?'Teacher lesson plan':'Student handout'}</h2><p>${safe(generated[activeTab]).replace(/\n/g,'<br>')}</p><p>chalkandroots.com</p></body></html>`);w.document.close();w.focus();w.print();});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(generated[activeTab]);$('status').textContent='Selected format copied.';}catch{$('status').textContent='Copy unavailable in this browser.';}});
 
+$('downloadPdf').addEventListener('click',()=>{
+ if(!generated)return;
+ try{
+  const PdfCtor=window.jspdf&&window.jspdf.jsPDF;
+  if(!PdfCtor)throw new Error('The PDF export library did not load. Check your internet connection and try again.');
+  const pdf=new PdfCtor({orientation:'portrait',unit:'pt',format:'letter'});
+  const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight();
+  const margin=48,contentW=pageW-margin*2,bottom=pageH-52;
+  let y=66;
+  const cleanText=value=>String(value??'')
+   .replace(/\r/g,'').replace(/\u00a0/g,' ')
+   .replace(/[“”]/g,'"').replace(/[‘’]/g,"'")
+   .replace(/[–—]/g,'-').replace(/…/g,'...')
+   .replace(/[•▪]/g,'-').replace(/\t/g,'  ')
+   .replace(/[^\x09\x0A\x0D\x20-\xFF]/g,'?');
+  const pageTop=()=>{
+   pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(122,155,122);
+   pdf.text('CHALK & ROOTS',margin,34);
+   pdf.setDrawColor(200,217,200);pdf.setLineWidth(.8);pdf.line(margin,43,pageW-margin,43);
+   y=65;
+  };
+  const nextPage=()=>{pdf.addPage();pageTop();};
+  const writeLine=(value,opts={})=>{
+   const size=opts.size||10.5,style=opts.style||'normal',font=opts.font||'helvetica';
+   const color=opts.color||[53,48,43],leading=opts.leading||14.5;
+   pdf.setFont(font,style);pdf.setFontSize(size);pdf.setTextColor(...color);
+   const lines=pdf.splitTextToSize(cleanText(value),contentW-(opts.indent||0));
+   for(const line of lines){
+    if(y+leading>bottom)nextPage();
+    pdf.text(line,margin+(opts.indent||0),y);y+=leading;
+   }
+  };
+  const writeSection=(heading,body)=>{
+   if(heading==='Student handout')nextPage();
+   writeLine(heading,{font:'times',style:'bold',size:17,color:[41,77,61],leading:23});
+   y+=7;
+   const rows=String(body||'').replace(/\r/g,'').split('\n');
+   for(const raw of rows){
+    const line=raw.trim();
+    if(!line){y+=5;continue;}
+    const markdownHeading=line.match(/^#{1,3}\s+(.+)$/);
+    const numberedHeading=line.match(/^(\d+[\.\)]\s+.+)$/);
+    const bullet=line.match(/^[-*]\s+(.+)$/);
+    if(markdownHeading){
+     y+=2;writeLine(markdownHeading[1],{font:'helvetica',style:'bold',size:11.5,color:[41,77,61],leading:16});
+    }else if(numberedHeading){
+     writeLine(numberedHeading[1],{style:'bold',size:10.5,color:[74,52,40],leading:15});
+    }else if(bullet){
+     writeLine('- '+bullet[1],{size:10.2,leading:14,indent:10});
+    }else{
+     const cleaned=line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1');
+     writeLine(cleaned,{size:10.2,leading:14});
+    }
+   }
+  };
+  pdf.setProperties({title:(generated.title||'Chalk & Roots Lesson')+' - Teacher Plan and Student Handout',author:'Chalk & Roots',subject:'Standards-based classroom lesson'});
+  pageTop();
+  pdf.setFont('times','bold');pdf.setFontSize(22);pdf.setTextColor(41,77,61);
+  const titleLines=pdf.splitTextToSize(cleanText(generated.title||'Classroom-Ready Lesson'),contentW);
+  for(const line of titleLines){pdf.text(line,margin,y);y+=27;}
+  pdf.setFont('helvetica','normal');pdf.setFontSize(9.5);pdf.setTextColor(113,103,95);
+  pdf.text('Teacher Plan and Student Handout',margin,y+2);y+=27;
+  writeSection('Teacher Plan',generated.teacher);
+  writeSection('Student Handout',generated.student);
+  const total=pdf.internal.getNumberOfPages();
+  for(let page=1;page<=total;page++){
+   pdf.setPage(page);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(113,103,95);
+   pdf.text('chalkandroots.com',margin,pageH-25);
+   pdf.text('Page '+page+' of '+total,pageW-margin,pageH-25,{align:'right'});
+  }
+  pdf.save('Chalk_Roots_Lesson.pdf');
+  $('status').textContent='PDF downloaded with both the Teacher Plan and Student Handout.';
+ }catch(err){$('status').textContent=err.message||'PDF export failed.';}
+});
+
 $('downloadPptx').addEventListener('click',async()=>{
  if(!generated)return;
  try{
-  if(!window.PptxGenJS)throw new Error('PowerPoint export library did not load. Check your internet connection.');
+  if(typeof window.PptxGenJS!=='function')throw new Error('The PowerPoint export library did not load. Check your internet connection and try again.');
   const pptx=new window.PptxGenJS();pptx.layout='LAYOUT_WIDE';pptx.author='Chalk & Roots';pptx.subject='Standards-based lesson';
   pptx.theme={headFontFace:'Aptos Display',bodyFontFace:'Aptos',lang:'en-US'};
-  const addHeader=(slide,title)=>{
+  const addHeader=(slide,title,page)=>{
    slide.background={color:'FAF7F2'};
    slide.addText('CHALK & ROOTS',{x:.55,y:.3,w:4,h:.25,fontSize:10,bold:true,charSpacing:2,color:'7A9B7A'});
-   slide.addText(title,{x:.55,y:.85,w:12.1,h:.6,fontFace:'Georgia',fontSize:25,bold:true,color:'4A3428'});
+   slide.addText(title,{x:.55,y:.85,w:12.1,h:.6,fontFace:'Georgia',fontSize:25,bold:true,color:'294D3D'});
    slide.addText('chalkandroots.com',{x:.55,y:7.12,w:5,h:.2,fontSize:9,color:'71675F'});
+   slide.addText(String(page),{x:12.1,y:7.12,w:.65,h:.2,fontSize:9,color:'71675F',align:'right'});
   };
-  for(const [heading,body] of [['Teacher lesson plan',generated.teacher],['Student handout',generated.student]]){
-   let slide=pptx.addSlide();addHeader(slide,heading);
-   const chunks=String(body||'').split(/\n{2,}/);let y=1.65;
-   for(const chunk of chunks){
-    const lines=chunk.split('\n').map(x=>x.replace(/^#{1,3}\s*/,'').replace(/^[-*]\s*/,'• ')).join('\n');
-    const h=Math.max(.42,Math.min(1.2,lines.split('\n').length*.2+.18));
-    if(y+h>6.85){slide=pptx.addSlide();addHeader(slide,heading);y=1.65;}
-    slide.addText(lines,{x:.7,y,w:11.9,h,fontSize:13,color:'35302B',fit:'shrink',valign:'top',margin:.06});y+=h+.12;
+  const wrapText=(value,max=132)=>{
+   const words=String(value||'').split(/\s+/);const out=[];let line='';
+   for(const word of words){
+    if(!word)continue;
+    if(line&&line.length+word.length+1>max){out.push(line);line=word;}else line+=(line?' ':'')+word;
    }
-  }
+   if(line)out.push(line);return out.length?out:[''];
+  };
+  const addSection=(heading,body)=>{
+   let page=1,slide=pptx.addSlide(),y=1.65;addHeader(slide,heading,page);
+   const newSlide=()=>{page++;slide=pptx.addSlide();addHeader(slide,heading,page);y=1.65;};
+   const addRow=(text,kind='body')=>{
+    const fontSize=kind==='heading'?14:kind==='number'?12:11.5;
+    const lineH=kind==='heading'?.31:.235;
+    const color=kind==='heading'?'294D3D':kind==='number'?'4A3428':'35302B';
+    const fontFace=kind==='heading'?'Georgia':'Aptos';
+    const bold=kind!=='body';
+    const lines=wrapText(text,kind==='heading'?105:132);
+    for(const line of lines){
+     if(y+lineH>6.85)newSlide();
+     slide.addText(line,{x:.72,y,w:11.9,h:lineH,fontFace,fontSize,bold,color,margin:0,breakLine:false,fit:'shrink',valign:'mid'});
+     y+=lineH;
+    }
+    if(kind!=='heading')y+=.045;
+   };
+   for(const raw of String(body||'').replace(/\r/g,'').split('\n')){
+    const line=raw.trim();
+    if(!line){y+=.11;if(y>6.8)newSlide();continue;}
+    const headingMatch=line.match(/^#{1,3}\s+(.+)$/);
+    const numberMatch=line.match(/^(\d+[\.\)]\s+.+)$/);
+    const bulletMatch=line.match(/^[-*]\s+(.+)$/);
+    if(headingMatch){y+=.04;addRow(headingMatch[1].replace(/\*\*/g,''),'heading');}
+    else if(numberMatch)addRow(numberMatch[1].replace(/\*\*/g,''),'number');
+    else if(bulletMatch)addRow('- '+bulletMatch[1].replace(/\*\*/g,''),'body');
+    else addRow(line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1'),'body');
+   }
+  };
+  addSection('Teacher Plan',generated.teacher);
+  addSection('Student Handout',generated.student);
   await pptx.writeFile({fileName:'Chalk_Roots_Lesson.pptx'});
-  $('status').textContent='PowerPoint file created: Teacher Plan and Student Handout.';
+  $('status').textContent='PowerPoint downloaded with both the Teacher Plan and Student Handout.';
  }catch(err){$('status').textContent=err.message||'PowerPoint export failed.';}
 });
 </script></body></html>
