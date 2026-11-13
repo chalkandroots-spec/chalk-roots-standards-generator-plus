@@ -150,7 +150,7 @@ $('downloadPdf').addEventListener('click',()=>{
    }
   };
   const writeSection=(heading,body)=>{
-   if(heading==='Student handout')nextPage();
+   if(String(heading).toLowerCase()==='student handout')nextPage();
    writeLine(heading,{font:'times',style:'bold',size:17,color:[41,77,61],leading:23});
    y+=7;
    const rows=String(body||'').replace(/\r/g,'').split('\n');
